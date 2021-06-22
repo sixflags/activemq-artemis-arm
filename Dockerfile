@@ -28,6 +28,7 @@ ENV ARTEMIS_TMPDIR /tmp
 ENV ARTEMIS_HOME /opt/activemq-artemis
 ENV ARTEMIS_USER artemis
 ENV ARTEMIS_PASSWORD artemis
+ENV JGROUPS_KUBERNETES_VERSION 0.9.3
 ENV ANONYMOUS_LOGIN false
 ENV EXTRA_ARGS --http-host 0.0.0.0 --relax-jolokia
 
@@ -68,6 +69,18 @@ RUN curl "https://mirrors.hostingromania.ro/apache.org/activemq/activemq-artemis
 COPY ./docker-run.sh /opt
 
 RUN chmod +x /opt/docker-run.sh
+
+# Add jgroups KUBE_PING and DNS_PING
+# Using KUBE_PING 0.9.3. Can't upgrade to 1.x.x as Artemis uses JGroups 3.3.x 
+# https://github.com/jgroups-extras/jgroups-kubernetes/issues/30
+WORKDIR /opt/jgroupskubernetes
+RUN wget -O ivy-2.4.0.jar http://search.maven.org/remotecontent?filepath=org/apache/ivy/ivy/2.4.0/ivy-2.4.0.jar && \
+  java -jar ivy-2.4.0.jar -dependency org.jgroups.kubernetes kubernetes "${JGROUPS_KUBERNETES_VERSION}" -retrieve "[artifact]-[revision](-[classifier]).[ext]" -types jar && \
+  java -jar ivy-2.4.0.jar -dependency org.jgroups.kubernetes dns "${JGROUPS_KUBERNETES_VERSION}" -retrieve "[artifact]-[revision](-[classifier]).[ext]" -types jar && \
+  rm ivy-2.4.0.jar
+
+COPY --from=builder "/opt/jgroupskubernetes/*" "/opt/apache-artemis-$ARTEMIS_VERSION/lib/"
+RUN rm -r /opt/jgroupskubernetes
 
 # Expose some outstanding folders
 VOLUME ["/var/lib/artemis-instance/etc-overrides", "/var/lib/artemis-instance/data"]
