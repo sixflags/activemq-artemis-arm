@@ -17,8 +17,9 @@
 
 # ActiveMQ Artemis
 
-FROM openjdk:8
+FROM adoptopenjdk:11-jre-hotspot
 LABEL maintainer="Apache ActiveMQ Team"
+LABEL org.opencontainers.image.source https://github.com/sixflags/activemq-artemis-arm
 # Make sure pipes are considered to determine success, see: https://github.com/hadolint/hadolint/wiki/DL4006
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
